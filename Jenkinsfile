@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -9,8 +10,6 @@ pipeline {
     environment {
         ARTIFACTORY_URL = 'http://10.131.103.92:8081/artifactory'
         ARTIFACTORY_REPO = 'Task2'
-        SONARQUBE_URL = 'http://10.131.103.92:9000'
-        SONAR_PROJECT_KEY = 'Task2'
     }
 
     stages {
@@ -24,7 +23,7 @@ pipeline {
             steps {
                 checkout([$class: 'GitSCM',
                     userRemoteConfigs: [[
-                        url: 'https://github.com/ThanujaRatakonda/Task1.git',
+                        url: 'https://github.com/ThanujaRatakonda/Task2.git',
                         credentialsId: 'GITHUB'
                     ]],
                     branches: [[name: '*/master']]
@@ -51,9 +50,7 @@ pipeline {
                 withCredentials([string(credentialsId: 'SonarQube', variable: 'TOKEN')]) {
                     script {
                         sh '''
-                            curl -s -H "Authorization: Bearer $TOKEN" \
-                            "$SONARQUBE_URL/api/measures/component?component=$SONAR_PROJECT_KEY&metricKeys=coverage" \
-                            -o coverage.json
+                            curl -s -H "Authorization: Bearer $TOKEN"                             "http://10.131.103.92:9000/api/measures/component?component=Task1&metricKeys=coverage"                             -o coverage.json
                         '''
                         def json = readJSON file: 'coverage.json'
                         def coverage = json.component.measures[0].value
@@ -79,3 +76,4 @@ pipeline {
         }
     }
 }
+
