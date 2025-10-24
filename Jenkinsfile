@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -45,16 +44,14 @@ pipeline {
             }
         }
 
-        stage('SonarQube Coverage') {
+        stage('Quality Gate') {
             steps {
-                withCredentials([string(credentialsId: 'SonarQube', variable: 'TOKEN')]) {
+                timeout(time: 3, unit: 'MINUTES') {
                     script {
-                        sh '''
-                            curl -s -H "Authorization: Bearer $TOKEN"                             "http://10.131.103.92:9000/api/measures/component?component=Task1&metricKeys=coverage"                             -o coverage.json
-                        '''
-                        def json = readJSON file: 'coverage.json'
-                        def coverage = json.component.measures[0].value
-                        echo "SonarQube Coverage: ${coverage}%"
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Pipeline failed due to SonarQube Quality Gate: ${qg.status}"
+                        }
                     }
                 }
             }
@@ -63,14 +60,13 @@ pipeline {
         stage('Upload to Artifactory') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'JFROG', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                    script {
-                        def timestamp = new Date().format("yyyy-MM-dd HH:mm:ss", TimeZone.getTimeZone('IST'))
-                        echo "Artifact uploaded at: ${timestamp}"
-                        sh '''
-                            FILE_NAME=$(basename dist/*.jar)
-                            curl -u $USERNAME:$PASSWORD -T dist/$FILE_NAME "$ARTIFACTORY_URL/$ARTIFACTORY_REPO/Task2/$FILE_NAME"
-                        '''
-                    }
+                    sh '''
+                        FILE_NAME=$(basename dist/*.jar)
+                        TIMESTAMP=$(date +%Y%m%d%H%M%S)
+                        NEW_NAME="${FILE_NAME%.jar}-$TIMESTAMP.jar"
+                        cp dist/$FILE_NAME dist/$NEW_NAME
+                        curl -u $USERNAME:$PASSWORD -T dist/$NEW_NAME "$ARTIFACTORY_URL/$ARTIFACTORY_REPO/Task2/$NEW_NAME"
+                    '''
                 }
             }
         }
