@@ -24,7 +24,7 @@ pipeline {
             steps {
                 checkout([$class: 'GitSCM',
                     userRemoteConfigs: [[
-                        url: 'https://github.com/ThanujaRatakonda/Task2.git',
+                        url: 'https://github.com/ThanujaRatakonda/Task1.git',
                         credentialsId: 'GITHUB'
                     ]],
                     branches: [[name: '*/master']]
@@ -48,7 +48,7 @@ pipeline {
 
         stage('SonarQube Coverage') {
             steps {
-                withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'TOKEN')]) {
+                withCredentials([string(credentialsId: 'SonarQube', variable: 'TOKEN')]) {
                     script {
                         sh '''
                             curl -s -H "Authorization: Bearer $TOKEN" \
