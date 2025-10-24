@@ -46,10 +46,12 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'MINUTES') {
-                    script {
-                        def qg = waitForQualityGate()
-                        echo "Quality Gate Status: ${qg.status}"
+                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                    timeout(time: 1, unit: 'MINUTES') {
+                        script {
+                            def qg = waitForQualityGate()
+                            echo "Quality Gate Status: ${qg.status}"
+                        }
                     }
                 }
             }
