@@ -44,17 +44,16 @@ pipeline {
             }
         }
 
-        
-stage('Quality Gate') {
-    steps {
-        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-            timeout(time: 1, unit: 'MINUTES') {
+        stage('SonarQube Coverage') {
+            steps {
                 script {
-                    def qg = waitForQualityGate()
-                    echo "Quality Gate Status: ${qg.status}"
-
-                        }
-                    }
+                    def response = httpRequest(
+                        url: "http://10.131.103.92:9000/api/measures/component?component=Task1&metricKeys=coverage",
+                        authentication: 'SONARQUBE_TOKEN'
+                    )
+                    def json = readJSON text: response.content
+                    def coverage = json.component.measures[0].value
+                    echo "Code Coverage from SonarQube: ${coverage}%"
                 }
             }
         }
@@ -63,7 +62,8 @@ stage('Quality Gate') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'JFROG', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                     script {
-                        echo "Upload Time: ${new Date()}"
+                        def timestamp = new Date().format("yyyy-MM-dd HH:mm:ss", TimeZone.getTimeZone('IST'))
+                        echo "Artifact uploaded at: ${timestamp}"
                         sh '''
                             FILE_NAME=$(basename dist/*.jar)
                             curl -u $USERNAME:$PASSWORD -T dist/$FILE_NAME "$ARTIFACTORY_URL/$ARTIFACTORY_REPO/Task2/$FILE_NAME"
