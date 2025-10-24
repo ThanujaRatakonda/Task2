@@ -9,6 +9,8 @@ pipeline {
     environment {
         ARTIFACTORY_URL = 'http://10.131.103.92:8081/artifactory'
         ARTIFACTORY_REPO = 'Task2'
+        SONARQUBE_URL = 'http://10.131.103.92:9000'
+        SONAR_PROJECT_KEY = 'Task2'
     }
 
     stages {
@@ -46,14 +48,17 @@ pipeline {
 
         stage('SonarQube Coverage') {
             steps {
-                script {
-                    def response = httpRequest(
-                        url: "http://10.131.103.92:9000/api/measures/component?component=Task1&metricKeys=coverage",
-                        authentication: 'SONARQUBE_TOKEN'
-                    )
-                    def json = readJSON text: response.content
-                    def coverage = json.component.measures[0].value
-                    echo "Code Coverage from SonarQube: ${coverage}%"
+                withCredentials([string(credentialsId: 'SONARQUBE_TOKEN', variable: 'TOKEN')]) {
+                    script {
+                        sh '''
+                            curl -s -H "Authorization: Bearer $TOKEN" \
+                            "$SONARQUBE_URL/api/measures/component?component=$SONAR_PROJECT_KEY&metricKeys=coverage" \
+                            -o coverage.json
+                        '''
+                        def json = readJSON file: 'coverage.json'
+                        def coverage = json.component.measures[0].value
+                        echo "SonarQube Coverage: ${coverage}%"
+                    }
                 }
             }
         }
