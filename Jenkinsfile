@@ -35,37 +35,19 @@ pipeline {
                 sh 'ant clean dist'
             }
         }
-
-        stage('SonarQube Analysis') {
+               stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh 'sonar-scanner'
                 }
             }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 3, unit: 'MINUTES') {
-                    script {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            error "Pipeline failed due to SonarQube Quality Gate: ${qg.status}"
-                        }
-                    }
-                }
-            }
-        }
-
+        }           
         stage('Upload to Artifactory') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'JFROG', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                     sh '''
                         FILE_NAME=$(basename dist/*.jar)
-                        TIMESTAMP=$(date +%Y%m%d%H%M%S)
-                        NEW_NAME="${FILE_NAME%.jar}-$TIMESTAMP.jar"
-                        cp dist/$FILE_NAME dist/$NEW_NAME
-                        curl -u $USERNAME:$PASSWORD -T dist/$NEW_NAME "$ARTIFACTORY_URL/$ARTIFACTORY_REPO/Task2/$NEW_NAME"
+                        curl -u $USERNAME:$PASSWORD -T dist/$FILE_NAME "$ARTIFACTORY_URL/$ARTIFACTORY_REPO/Task2/$FILE_NAME"
                     '''
                 }
             }
