@@ -48,7 +48,7 @@ pipeline {
 
         stage('Show SonarQube Coverage') {
             steps {
-                withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                withCredentials([string(credentialsId: 'SonarQube', variable: 'SonarQube')]) {
                     script {
                         def response = sh(script: "curl -s -u ${SONAR_TOKEN}: ${SONAR_HOST}/api/measures/component?component=${SONAR_PROJECT_KEY}&metricKeys=coverage", returnStdout: true)
                         def json = readJSON text: response
